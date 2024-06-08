@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<meta charset="utf-8" />
+<title>MarkupChisel test</title>
+
+<meta name="viewport" content="width=device-width, minimum-scale=1, initial-scale=1" />
+<style>
+  @import "../node_modules/inter-ui/inter.css";
+  @import "../node_modules/@fontsource/roboto-mono/400.css";
+  @import "../node_modules/@fontsource/roboto-mono/700.css";
+
+  html, body, .cm-editor {
+    margin: 0; width: 100%; height: 100%; font-size: 16px;
+  }
+  @media print {
+    html, body, .cm-editor {
+      height: auto;
+    }
+  }
+
+  :root {
+    --font-family: "Inter", "Roboto", "Noto Sans", sans-serif;
+    --font-family-mono: "Roboto Mono", "Cousine", monospace;
+    --font-feature-settings: "tnum" 1, "ss01" 1, "ss04" 1, "calt" 1;
+  }
+  :root {
+    font-feature-settings: var(--font-feature-settings);
+    --markupchisel-font-family: var(--font-family);
+    --markupchisel-font-family-monospace: var(--font-family-mono);
+    --markupchisel-font-feature-settings-monospace: normal;
+    --markupchisel-font-size-factor-monospace: 1.0625;
+  }
+  .cm-editor .tok-markup.tok-comment {
+    font-feature-settings: var(--font-feature-settings), "calt" 0;
+  }
+  .cm-editor .tok-markup.tok-monospace:is(.tok-heading1, .tok-heading2) {
+    letter-spacing: -0.025em;
+  }
+</style>
+
+
+<script src="../dist/markupchisel.lite.bundle.iife.js"></script>
+<script type="module">
+  const { codemirror, lezer } = MarkupChisel.imports;
+
+  const { insertTab, selectParentSyntax } = codemirror.commands;
+  const { keymap } = codemirror.view;
+  const { Prec } = codemirror.state;
+
+  const { MarkupChiselView } = MarkupChisel;
+  const { MarkupChiselBaseView } = MarkupChisel.base;
+
+  const exports = { codemirror, lezer, ...MarkupChisel };
+  for (const [name, value] of Object.entries(exports)) {
+    window[name] = value;
+  }
+
+
+  window.markupChisel = new MarkupChiselView({
+    doc: `MarkupChisel`,
+    parent: document.body,
+    extensions: [
+      Prec.highest(keymap.of([
+        { key: "Mod-Enter", run: view => (window.getTextToHash(), true), },
+      ])),
+      Prec.high(keymap.of([
+        { key: "Mod-i", run: insertTab, },
+        { key: "Alt-i", run: selectParentSyntax, },
+        { key: "Mod-\\", run: selectParentSyntax, },
+      ])),
+    ],
+  }, {});
+  window.markupChisel.contentDOM.focus();
+
+
+  window.getText = function getText() {
+    return markupChisel.state.doc.toString();
+  };
+  window.setText = function setText(text) {
+    markupChisel.dispatch({ changes: { from: 0, to: markupChisel.state.doc.length, insert: text } });
+  };
+
+
+  window.getHashParams = function(hash = location.hash) {
+    hash = hash.startsWith("#") ? hash.slice(1) : hash;
+    return new URLSearchParams(hash);
+  }
+  window.updateHashText = function(hash = location.hash) {
+    const params = window.getHashParams(hash);
+    params.delete("save"); params.delete("s"); params.delete("S");
+    const text = window.getText();
+    if (text == window.TEST_DOC) {
+      params.set("test", "");
+      params.delete("text");
+    } else {
+      params.set("text", window.getText());
+      params.delete("test");
+    }
+    return `#${params.toString()}`;
+  }
+  window.getTextToHash = function(hash = location.hash) {
+    location.hash = window.updateHashText(hash);
+  }
+  window.setTextFromHash = function(hash = location.hash) {
+    const params = window.getHashParams(hash);
+    if (params.has("save") || params.has("s") || params.has("S")) {
+      window.getTextToHash();
+    } else if (params.has("test")) {
+      window.setText(window.TEST_DOC);
+    } else {
+      window.setText(params.get("text") || "");
+    }
+  };
+
+
+  const TEST_DOC = window.TEST_DOC = `
+# Markup\`Chisel\` Test Document
+
+1. **Hello** _world_!  Miss Spelled missspelled a word.
+2. \`This is code\`, ~~strikethrough~~, ^superscript^, ~subscript~, &amp; [H~2~O][water]
+
+[water]: https://en.wikipedia.org/wiki/H₂O "The Universal Solvent™"
+
+> The quick brown fox \\
+> jumps over the lazy :dog:.
+
+[This] [HR](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/hr)
+[should be] gray:
+
+* * * *
+
+![test image](data:image/svg+xml,...   "title")
+Standalone URL links:  <https://example.com/> https://example.net/
+[![test linked image](data:image/svg+xml,...)](https://example.org/  "title")
+
+## Headings
+
+Heading 1
+=========
+Heading 2
+---------
+<!-- (Setext headings should be monospace) -->
+
+# Heading 1
+## Heading 2
+### Heading 3
+#### Heading 4
+##### Heading 5
+###### Heading 6
+
+## Code blocks
+
+\`\`\`typescript
+let identifier: string = "hello\\tworld";  // hello world
+\`\`\`
+
+\`\`\`
+all of these code blocks should be monospace
+[tab]\tx
+00000000x
+\`\`\`
+
+    including this one
+
+\`\`\`html
+and
+<u>this</u> one
+\`\`\`
+
+\`\`\`markdown
+## and also... **wat?**
+\`\`\`
+
+\`\`\`tex
+% this should not be highlighted with the lite bundle
+\`\`\`
+
+<div>HTML block</div>
+
+## GFM blocks
+
+| Hello: | Monospace? |
+| ------ | ---------- |
+| World. |  **Only**  |
+
+* [ ] todo
+* [x] completed
+* [X] _**REALLY**_ completed
+  `.trim();
+
+
+  if (!location.hash || location.hash.trim() == "#") {
+    location.hash = "#test";
+  }
+
+  window.setTextFromHash();
+  window.addEventListener("hashchange", event => window.setTextFromHash());
+</script>
