@@ -3,14 +3,24 @@
   "version": "0.1.0",
   "description": "A minimal Markdown editor based on CodeMirror 6",
   "homepage": "https://code.s.zeid.me/markupchisel",
+  "repository": {
+    "type": "git",
+    "url": "https://code.s.zeid.me/markupchisel.git"
+  },
   "type": "module",
   "browser": "dist/import/markupchisel.full.esm.js",
+  "exports": {
+    "import": "dist/import/markupchisel.full.esm.js"
+  },
   "files": [
-    "dist",
-    "README.md"
+    "dist/**",
+    "gen/**",
+    "src/**",
+    "logo.svg"
   ],
   "scripts": {
     "build": "node build.js",
+    "prepare": "npm run build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "S. Zeid",
