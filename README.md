@@ -24,6 +24,7 @@ A minimal Markdown editor based on [CodeMirror 6](https://codemirror.net/6/).
   * Main font may be set via `--markupchisel-font-family`
   * Monospace font may be set via `--markupchisel-font-family-monospace`
 * Stable CSS classes for token types (see [below](#css-classes) for a list)
+* Supports [GitHub Flavored Markdown (GFM) extensions](https://github.github.com/gfm/)
 * Extra features (can be disabled by using the `MarkupChiselBaseView` class):
   * Default color palette based on Adwaita with dark theme support per system preference or [`color-scheme`](https://developer.mozilla.org/en-US/docs/Web/CSS/color-scheme)
   * Spellcheck, autocorrect, and autocapitalizing sentences are enabled by default
