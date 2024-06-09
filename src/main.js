@@ -269,7 +269,7 @@ export function MarkupChiselColors(options) {
     "& .tok-variableName.tok-definition": { color: "var(--identifier)", },
     "& .tok-propertyName.tok-definition": { color: "var(--identifier)", },
 
-    "& .tok-escape": { color: "var(--constant)", fontWeight: "bold", textDecoration: "underline", },
+    "& .tok-escape": { color: "var(--constant)", fontWeight: "bold", textDecorationLine: "underline", },
     "& .tok-contentSeparator": { color: "var(--comment)", opacity: "1", },
     "& .tok-markup.tok-mark": { color: "var(--comment)", fontStyle: "normal", },
     "& .tok-markup.tok-markQuoteBlock": { opacity: 0.75, },

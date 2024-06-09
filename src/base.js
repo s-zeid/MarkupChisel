@@ -335,9 +335,9 @@ export class MarkupChiselBaseView extends EditorView {
       fontSize: this.CSS_CALC_FONT_SIZE,
     },
 
-    "& .cm-content *": { tabSize: "var(--markupchisel-private-tab-size, 8)", },
+    "& .cm-content *": { tabSize: "var(--markupchisel-private-tab-size, 8)", textDecorationThickness: "0.0625em", },
 
-    "& .tok-heading": { textDecoration: "none", fontSize: this.CSS_CALC_FONT_SIZE, },
+    "& .tok-heading": { textDecorationLine: "none", fontSize: this.CSS_CALC_FONT_SIZE, },
     "& .tok-heading1": { "--markupchisel-private-font-size": "2em", },
     "& .tok-heading2": { "--markupchisel-private-font-size": "1.5em", },
     "& .tok-heading3": { "--markupchisel-private-font-size": "1.2em", },
@@ -350,18 +350,18 @@ export class MarkupChiselBaseView extends EditorView {
     "& .cm-line:has(:is(.tok-heading1, .tok-heading2).tok-markHeadingUnderlined)": { lineHeight: "0.5", marginBlock: "0 0.125em", },
 
     "& .tok-contentSeparator": { opacity: "0.625", },
-    "& .tok-escape": { fontWeight: "bold", textDecoration: "underline", },
-    "& .tok-image": { textDecoration: "underline overline", textDecorationStyle: /* separatae because WebKit */ "dashed", },
-    "& .tok-linkImage": { textDecoration: "underline overline solid", },
+    "& .tok-escape": { fontWeight: "bold", textDecorationLine: "underline", },
+    "& .tok-image": { textDecorationLine: "underline overline", textDecorationStyle: "dashed", },
+    "& .tok-linkImage": { textDecorationLine: "underline overline", textDecorationStyle: "solid", },
     "& :where(.tok-markup).tok-mark": { color: "color-mix(in hsl, currentColor, rgba(128 128 128 / calc(1 - 0.625)) 50%)", },
     "& .tok-markup.tok-markCode": { fontWeight: "bold", textShadow: "0 0 1px currentColor", },
     "& .tok-markup.tok-markCodeBlock:first-child:last-child": { lineHeight: "0", verticalAlign: "-0.375em", },
     "& :where(.tok-markup).tok-markQuote:first-child": { color: "color-mix(in hsl, currentColor, rgba(128 128 128 / calc(1 - 0.625)) calc(50% / 0.75))", },
     "& .tok-superscript": { verticalAlign: "super", fontSize: "smaller", },
     "& .tok-subscript": { verticalAlign: "sub", fontSize: "smaller", },
-    "& .tok-url:not(.tok-linkURL)": { textDecoration: "underline", },
+    "& .tok-url:not(.tok-linkURL)": { textDecorationLine: "underline", },
 
     // Remove underline from links, except for link text
-    "& .tok-markup:is(.tok-markLink, .tok-markImage, .tok-link.tok-linkURL, .tok-link.tok-linkURL + .tok-link:not(.tok-markLink), .tok-link.tok-linkTitle, .tok-link.tok-linkLabel)": { textDecoration: "none", },
+    "& .tok-markup:is(.tok-markLink, .tok-markImage, .tok-link.tok-linkURL, .tok-link.tok-linkURL + .tok-link:not(.tok-markLink), .tok-link.tok-linkTitle, .tok-link.tok-linkLabel)": { textDecorationLine: "none", },
   });
 }
