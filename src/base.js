@@ -3,7 +3,7 @@ import { defaultKeymap, history, historyKeymap, redo, undo } from "@codemirror/c
 import { Language, defaultHighlightStyle, syntaxHighlighting } from "@codemirror/language";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { EditorState, Prec } from "@codemirror/state";
-import { EditorView, drawSelection, highlightSpecialChars, keymap } from "@codemirror/view";
+import { EditorView, drawSelection, keymap } from "@codemirror/view";
 import { Tag, classHighlighter, styleTags, tagHighlighter, tags } from "@lezer/highlight";
 
 
@@ -203,7 +203,6 @@ export class MarkupChiselBaseView extends EditorView {
 
   static EXTENSIONS = [
     EditorView.lineWrapping,
-    highlightSpecialChars(),
     drawSelection(),
     history(),
     keymap.of([
