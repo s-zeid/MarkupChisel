@@ -70,7 +70,10 @@ async function build() {
   });
 
   const testDocument = await fs.readFile("src/test-document.md", { encoding: "utf-8" });
-  await fs.writeFile("gen/test-document.js", `export default ${JSON.stringify(testDocument)};`);
+  await fs.writeFile(
+    "gen/test-document.js",
+    `export default ${JSON.stringify(testDocument.trim())};`,
+  );
 
   const variants = {
     full: {
