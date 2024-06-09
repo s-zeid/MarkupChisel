@@ -69,6 +69,9 @@ async function build() {
     format: "esm",
   });
 
+  const testDocument = await fs.readFile("src/test-document.md", { encoding: "utf-8" });
+  await fs.writeFile("gen/test-document.js", `export default ${JSON.stringify(testDocument)};`);
+
   const variants = {
     full: {
       entryPoints: [`src/variants/full.js`],
