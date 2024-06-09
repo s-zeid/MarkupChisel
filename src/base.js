@@ -334,6 +334,9 @@ export class MarkupChiselBaseView extends EditorView {
       "--markupchisel-private-font-size-factor": "var(--markupchisel-font-size-factor-monospace, var(--markupchisel-font-size-factor, 1))",
       fontSize: this.CSS_CALC_FONT_SIZE,
     },
+    "& .tok-monospace:not(.tok-headingUnderlined), & .cm-specialChar": {
+      lineHeight: "1",
+    },
 
     "& .cm-content *": { tabSize: "var(--markupchisel-private-tab-size, 8)", textDecorationThickness: "0.0625em", },
 
@@ -347,7 +350,7 @@ export class MarkupChiselBaseView extends EditorView {
     "& .tok-nested.tok-heading": { "--markupchisel-private-font-size": "1em", },
 
     // thinner Setext delimiters
-    "& .cm-line:has(:is(.tok-heading1, .tok-heading2).tok-markHeadingUnderlined)": { lineHeight: "0.5", marginBlock: "0 0.125em", },
+    "& .cm-line:has(.tok-markHeadingUnderlined)": { lineHeight: "0.5", marginBlock: "0 0.125em", },
 
     "& .tok-contentSeparator": { opacity: "0.625", },
     "& .tok-escape": { fontWeight: "bold", textDecorationLine: "underline", },
