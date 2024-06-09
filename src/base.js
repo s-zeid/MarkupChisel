@@ -2,7 +2,7 @@ import * as commands from "@codemirror/commands";
 import { defaultKeymap, history, historyKeymap, redo, undo } from "@codemirror/commands";
 import { Language, defaultHighlightStyle, syntaxHighlighting } from "@codemirror/language";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
-import { EditorState, Prec } from "@codemirror/state";
+import { Compartment, EditorState, Prec } from "@codemirror/state";
 import { EditorView, drawSelection, keymap } from "@codemirror/view";
 import { Tag, classHighlighter, styleTags, tagHighlighter, tags } from "@lezer/highlight";
 
@@ -14,6 +14,7 @@ export class MarkupChiselBaseView extends EditorView {
   static DEFAULT_EXTRA_CONFIG = {
     addStyles: true,
     fxComposeTrailingFix: true,
+    history: true,
   };
 
   constructor(cmConfig = {}, extraConfig = {}) {
@@ -24,8 +25,11 @@ export class MarkupChiselBaseView extends EditorView {
       ...extraConfig,
     };
 
+    locals.historyCompartment = new Compartment();
+
     cmConfig = locals.cmConfig = { ...cmConfig };
     cmConfig.extensions = [
+      locals.historyCompartment.of([]),
       MarkupChiselBaseView.EXTENSIONS,
       extraConfig.addStyles ? Prec.low(MarkupChiselBaseView.MARKDOWN_BASE_THEME) : [],
       cmConfig.extensions || [],
@@ -34,6 +38,7 @@ export class MarkupChiselBaseView extends EditorView {
     super(cmConfig);
     this.markupChisel = locals;
     this.dom.dataset.markupchisel = "";
+    this._setHistoryEnabled(extraConfig.history);
 
     // Partial workaround for compositions in Firefox not using the proper style
     // (this only fixes the case where the line already has a token span,
@@ -44,6 +49,25 @@ export class MarkupChiselBaseView extends EditorView {
         this._beforeInputFxComposeTrailingFix,
       );
     }
+  }
+
+  async clearHistory() {
+    await this.disableHistory();
+    await this.enableHistory();
+  }
+
+  async disableHistory() {
+    this._setHistoryEnabled(false);
+  }
+
+  async enableHistory() {
+    this._setHistoryEnabled(true);
+  }
+
+  _setHistoryEnabled(value) {
+    this.dispatch({
+      effects: this.markupChisel.historyCompartment.reconfigure(value ? history() : []),
+    });
   }
 
   _beforeInputFxComposeTrailingFix(event) {
@@ -204,7 +228,6 @@ export class MarkupChiselBaseView extends EditorView {
   static EXTENSIONS = [
     EditorView.lineWrapping,
     drawSelection(),
-    history(),
     keymap.of([
       ...defaultKeymap,
       // The Mod+U bindings for (undo|redo)Selection conflict with View Source

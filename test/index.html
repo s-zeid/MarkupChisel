@@ -56,7 +56,7 @@
 
 
   window.markupChisel = new MarkupChiselView({
-    doc: `MarkupChisel`,
+    doc: `You should not be able to undo to this state.`,
     parent: document.body,
     extensions: [
       Prec.highest(keymap.of([
@@ -69,6 +69,7 @@
       ])),
     ],
   }, {});
+  window.markupChisel.clearHistory();
   window.markupChisel.contentDOM.focus();
 
 
