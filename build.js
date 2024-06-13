@@ -145,8 +145,9 @@ async function buildLicenseTxt(licenses) {
 async function makeLanguageDataLite(keep, debug = false) {
   keep = {
     extensions: [],
-    filenames: [],
+    aliases: [],
     names: [],
+    filenames: [],
     ...(keep ?? {}),
   };
 
@@ -182,16 +183,23 @@ async function makeLanguageDataLite(keep, debug = false) {
           keep.extensions.includes(e.value)
         ))
       ) || (
+        p.key.name == "alias" &&
+        p.value.type == "ArrayExpression" &&
+        p.value.elements.some(e => (
+          e.type == "Literal" &&
+          keep.aliases.includes(e.value)
+        ))
+      ) || (
+        p.key.name == "name" &&
+        p.value.type == "Literal" &&
+        keep.names.includes(p.value.value)
+      ) || (
         p.key.name == "filename" &&
         p.value.type == "Literal" &&
         keep.filenames.some(r_or_s => r_or_s == p.value.value || (
           r_or_s.source == p.value.regex?.pattern &&
           r_or_s.flags == p.value.regex?.flags
         ))
-      ) || (
-        p.key.name == "name" &&
-        p.value.type == "Literal" &&
-        keep.names.includes(p.value.value)
       )
     ))
   ));

@@ -18,8 +18,6 @@
     "jsx",
     "kt",
     "lua",
-    "m",
-    "mm",
     "php",
     "pl",
     "ps1",
@@ -37,8 +35,12 @@
     "xml",
     "yaml"
   ],
-  "filenames": [],
+  "aliases": [
+    "objc",
+    "objc++"
+  ],
   "names": [
     "Dockerfile"
-  ]
+  ],
+  "filenames": []
 }
