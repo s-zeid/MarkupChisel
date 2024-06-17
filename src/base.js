@@ -386,7 +386,9 @@ export class MarkupChiselBaseView extends EditorView {
     "& .tok-subscript": { verticalAlign: "sub", fontSize: "smaller", },
     "& .tok-url:not(.tok-linkURL)": { textDecorationLine: "underline", },
 
-    // Remove underline from links, except for link text
-    "& .tok-markup:is(.tok-markLink, .tok-markImage, .tok-link.tok-linkURL, .tok-link.tok-linkURL + .tok-link:not(.tok-markLink), .tok-link.tok-linkTitle, .tok-link.tok-linkLabel)": { textDecorationLine: "none", },
+    // Remove underline from links, except for link text and URLs
+    "& .tok-markup:is(.tok-markLink, .tok-markImage, .tok-link.tok-image.tok-linkURL, .tok-link.tok-linkURL + .tok-link:not(.tok-markLink), .tok-link.tok-linkTitle, .tok-link.tok-linkLabel)": { textDecorationLine: "none", },
+    // Dotted underline for link URLs, except for autolinks and GFM standalone links
+    "& .tok-markup:is(.tok-link, .tok-linkReference):not(.tok-image).tok-linkURL": { textDecorationLine: "underline", textDecorationStyle: "dotted", },
   });
 }
