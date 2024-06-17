@@ -271,8 +271,8 @@ export function MarkupChiselColors(options) {
 
     "& .tok-escape": { color: "var(--constant)", fontWeight: "bold", textDecorationLine: "underline", },
     "& .tok-contentSeparator": { color: "var(--comment)", opacity: "1", },
-    "& .tok-markup.tok-mark": { color: "var(--comment)", fontStyle: "normal", },
-    "& .tok-markup.tok-markQuoteBlock": { opacity: 0.75, },
+    "& .tok-markup.tok-mark": { "--markupchisel-private-color-mark": "var(--comment)", color: "var(--markupchisel-private-color-mark)", fontStyle: "normal", },
+    "& .tok-markup.tok-markQuoteBlock": { color: "var(--markupchisel-private-color)", opacity: 0.75, },
   });
 
   return [
