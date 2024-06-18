@@ -31,6 +31,13 @@ A minimal Markdown editor based on [CodeMirror 6](https://codemirror.net/6/).
   * Caret color follows syntax color
   * System selection colors
   * CSS variables for color names, scoped for use in CM6 themes (see [below](#css-variables) for a list)
+  * Interactive features (disabled by default)
+    * Clicking on a checkbox without holding a modifier key will toggle the
+      state of the checkbox.  Double-clicking will toggle the capitalization
+      of the `x` in the checkbox.
+    * Double-clicking on a link without holding a modifier key will open the
+      link in a new tab.  Double-clicking on the name of a link reference
+      will scroll to and highlight the link reference's URL.
 
 
 ## Building from source
@@ -76,6 +83,31 @@ other than Markdown.
 When using the bundles, certain CodeMirror and Lezer Parser modules are
 available via `MarkupChisel.imports`.  See [src/bundle.js](./src/bundle.js)
 for details.
+
+To enable the interactive features, set up MarkupChisel as follows:
+
+```javascript
+window.markupChisel = new MarkupChisel.MarkupChiselView({
+  doc: `**Hello** _world_!`,
+  parent: document.body,
+}, {
+  interactive: true,
+});
+```
+
+or to choose which interactive features are enabled:
+
+```javascript
+window.markupChisel = new MarkupChisel.MarkupChiselView({
+  doc: `**Hello** _world_!`,
+  parent: document.body,
+}, {
+  interactive: {
+    checkboxes: true,
+    links: true,
+  },
+});
+```
 
 
 ## CSS identifiers

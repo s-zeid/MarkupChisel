@@ -8,6 +8,8 @@
 > The quick brown fox \
 > jumps over the lazy :dog:.
 
+Please [][double-click] <- there.
+
 [This] [HR](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/hr)
 [should be] gray:
 
@@ -31,6 +33,8 @@ Heading 2
 #### Heading 4
 ##### Heading 5
 ###### Heading 6
+
+[double-click]: https://en.wikipedia.org/wiki/?search=DOUBLE-CLICK#ME (please 🙂)
 
 ## Code blocks
 

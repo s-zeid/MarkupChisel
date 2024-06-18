@@ -1,5 +1,5 @@
-import { EditorState } from "@codemirror/state";
-import { EditorView, drawSelection } from "@codemirror/view";
+import { EditorSelection, EditorState, Transaction } from "@codemirror/state";
+import { EditorView, ViewPlugin, drawSelection } from "@codemirror/view";
 
 import { MarkupChiselBaseView } from "./base.js";
 
@@ -24,8 +24,21 @@ export function MarkupChiselTweaks(options) {
     autocorrect: true,
     spellcheck: true,
     systemHighlight: false,
+    interactive: false,
     ...options,
   };
+
+  options.interactive = {
+    links: false,
+    checkboxes: false,
+    ...((typeof options.interactive == "object") ? options.interactive : {}),
+    __default: (typeof options.interactive == "boolean") ? options.interactive : null,
+  };
+  if (options.interactive.__default != null) {
+    for (const key of Object.keys(options.interactive)) {
+      options.interactive[key] = options.interactive.__default;
+    }
+  }
 
   function stringBoolean(s) {
     if (s != null && typeof s != "string") {
@@ -73,14 +86,166 @@ export function MarkupChiselTweaks(options) {
     },
   });
 
+  const useInteractiveExtensions = Object.entries(interactiveExtensions).map(([k, v]) => {
+    return Boolean(options.interactive[k]) ? v : null;
+  }).filter(v => v != null);
+
   return [
     tweaksTheme,
     ...(options.systemHighlight ? [systemHighlightTheme] : []),
     drawSelection(),
     EditorState.allowMultipleSelections.of(true),
     EditorView.contentAttributes.of(contentAttributes),
+    useInteractiveExtensions,
   ];
 }
+
+
+export const interactiveExtensions = {
+  checkboxes: [
+    // Toggle checkboxes on click (without modifier key)
+    // Double-click changes between [x] and [X]
+    EditorView.baseTheme({
+      "& .tok-markup.tok-checkbox": { cursor: "pointer", },
+    }),
+    ViewPlugin.fromClass(class {
+      constructor(view) {
+        this.view = view;
+        this.clickListener = (event) => {
+          const el = event.target;
+          const mod = event.altKey || event.ctrlKey || event.metaKey || event.shiftKey;
+          if (!mod && el.matches(".tok-markup.tok-checkbox")) {
+            const oldValue = el.textContent;
+            const checked = oldValue.trim() != "[ ]";
+            const newValue = checked ? "[ ]" : "[x]";
+            const start = this.view.posAtDOM(el);
+            const selection = getSelectedCharacterRange(this.view).slice(0, 3);
+            view.dispatch({ changes: { from: start, to: start + oldValue.length, insert: newValue }, annotations: Transaction.userEvent.of("input") });
+            setSelectedCharacterRange(this.view, ...selection);
+            el.__interactiveCheckboxState ??= {
+              previous2Values: [null, null],
+            };
+            el.__interactiveCheckboxState.previous2Values.shift();
+            el.__interactiveCheckboxState.previous2Values.push(oldValue);
+          }
+        };
+        this.dblclickListener = (event) => {
+          const el = event.target;
+          const mod = event.altKey || event.ctrlKey || event.metaKey || event.shiftKey;
+          if (!mod && el.matches(".tok-markup.tok-checkbox")) {
+            const oldValue = el.textContent;
+            let newValue = "[X]";
+            if (el.__interactiveCheckboxState?.previous2Values[0]?.trim() == "[X]") {
+              newValue = "[x]";
+            }
+            const start = this.view.posAtDOM(el);
+            const selection = getSelectedCharacterRange(this.view).slice(0, 3);
+            view.dispatch({ changes: { from: start, to: start + oldValue.length, insert: newValue }, annotations: Transaction.userEvent.of("input") });
+            setSelectedCharacterRange(this.view, ...selection);
+          }
+        };
+        this.view.dom.addEventListener("click", this.clickListener);
+        this.view.dom.addEventListener("dblclick", this.dblclickListener);
+      }
+      destroy() {
+        this.view.dom.removeEventListener("click", this.clickListener);
+        this.view.dom.removeEventListener("dblclick", this.dblclickListener);
+      }
+    }),
+  ],
+
+  links: [
+    // Open links on double-click (without modifier key)
+    // Double-clicking on a link reference label highlights the URL in the reference
+    EditorView.baseTheme({
+      "& .tok-markup:is(.tok-link, .tok-url):not(.tok-markLink, .tok-markImage, .tok-image.tok-url, .tok-image:not(.tok-linkImage))": { cursor: "pointer", },
+    }),
+    ViewPlugin.fromClass(class {
+      constructor(view) {
+        this.view = view;
+        this.dblclickListener = (event) => {
+          const el = event.target;
+          const mod = event.altKey || event.ctrlKey || event.metaKey || event.shiftKey;
+          if (!mod && el.matches(".tok-markup:is(.tok-link, .tok-url):not(.tok-markLink, .tok-markImage, .tok-image.tok-url, .tok-image:not(.tok-linkImage))")) {
+            const isImageLink = el.matches(".tok-linkImage:not(.tok-url)");
+            let url, linkReferenceEl;
+            if (el.matches(".tok-url")) {
+              url = el.textContent.trim();
+            } else {
+              const findNextVisitor = (visit) => {
+                if (visit.nextElementSibling) {
+                  return visit.nextElementSibling;
+                }
+                let visitLine = visit.closest(".cm-line")?.nextElementSibling;
+                for (visitLine; visitLine; visitLine = visitLine.nextElementSibling) {
+                  if (visitLine?.children?.[0]) {
+                    return visitLine.children[0];
+                  }
+                }
+              };
+              let visit = findNextVisitor(el);
+              let linkReference = "";
+              if (el.matches(".tok-link.tok-linkLabel")) {
+                linkReference = el.textContent.trim();
+              }
+              let inLinkReference = false;
+              let matchedLinkReference = false;
+              for (visit; visit; visit = findNextVisitor(visit)) {
+                if (visit.matches(".tok-linkReference")) {
+                  inLinkReference = true;
+                  if (visit.matches(".tok-linkLabel") && visit.textContent.trim() == linkReference) {
+                    matchedLinkReference = true;
+                  }
+                } else {
+                  inLinkReference = matchedLinkReference = false;
+                }
+    
+                if (!linkReference && visit.matches(".tok-link.tok-linkLabel")) {
+                  linkReference = visit.textContent.trim();
+                } else if (!linkReference || inLinkReference) {
+                  if (visit.matches(".tok-markLink, .tok-markAutolink") && "[<".includes(visit.textContent.trim())) {
+                    break;
+                  }
+                  if (visit.matches(".tok-image.tok-url")) {
+                    continue;
+                  }
+                  if (visit.matches(".tok-url") && (!inLinkReference || matchedLinkReference)) {
+                    url = visit.textContent.trim();
+                    if (inLinkReference && matchedLinkReference) {
+                      linkReferenceEl = visit;
+                    }
+                    break;
+                  }
+                }
+    
+                if (!linkReference && !visit.nextElementSibling) {
+                  break;
+                }
+              }
+            }
+            if (linkReferenceEl && el.matches(".tok-linkLabel")) {
+              const pos = view.posAtDOM(linkReferenceEl);
+              const selection = EditorSelection.single(pos, pos + linkReferenceEl.textContent.length);
+              view.dispatch({ selection, effects: [EditorView.scrollIntoView(
+                pos,
+                { y: "center", x: "center" },
+              )] });
+            } else if (url) {
+              const selection = getSelectedCharacterRange(this.view).slice(0, 3);
+              selection[1] = selection[0];
+              setSelectedCharacterRange(this.view, ...selection);
+              window.open(url, "_blank", "noopener,noreferrer");
+            }
+          }
+        };
+        this.view.dom.addEventListener("dblclick", this.dblclickListener);
+      }
+      destroy() {
+        this.view.dom.removeEventListener("dblclick", this.dblclickListener);
+      }
+    }),
+  ],
+};
 
 
 export function MarkupChiselColors(options) {
@@ -280,4 +445,32 @@ export function MarkupChiselColors(options) {
     variableHighlightTheme,
     palettes[options.palette] || palettes.basic,
   ];
+}
+
+
+function getSelectedCharacterRange(view) {
+  const selection = view.state.selection.asSingle();
+  const anchor = selection.ranges[0].anchor;
+  const head = selection.ranges[0].head;
+  let [start, end, direction] = [0, 0, "none"];
+  if (anchor > head) {
+    [start, end, direction] = [head, anchor, "backward"];
+  } else {
+    [start, end, direction] = [anchor, head, (anchor == head) ? "none" : "forward"];
+  }
+  return [start, end, direction, view.state.sliceDoc(start, end)];
+}
+
+
+function setSelectedCharacterRange(view, start, end, direction, text) {
+  if (text != null) {
+    view.dispatch({ changes: [{ from: start, to: end, insert: text }] });
+    end = start + text.length;
+  }
+  let [anchor, head] = [start, end];
+  if (direction == "backward") {
+    [anchor, head] = [head, anchor];
+  }
+  const selection = EditorSelection.single(anchor, head);
+  view.dispatch({ selection });
 }
