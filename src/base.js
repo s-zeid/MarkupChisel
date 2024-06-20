@@ -25,11 +25,11 @@ export class MarkupChiselBaseView extends EditorView {
       ...extraConfig,
     };
 
-    locals.historyCompartment = new Compartment();
+    locals.historyCompartment = new ToggleCompartment(history());
 
     cmConfig = locals.cmConfig = { ...cmConfig };
     cmConfig.extensions = [
-      locals.historyCompartment.of([]),
+      locals.historyCompartment.of(false),
       MarkupChiselBaseView.EXTENSIONS,
       extraConfig.addStyles ? Prec.low(MarkupChiselBaseView.MARKDOWN_BASE_THEME) : [],
       cmConfig.extensions || [],
@@ -66,7 +66,7 @@ export class MarkupChiselBaseView extends EditorView {
 
   _setHistoryEnabled(value) {
     this.dispatch({
-      effects: this.markupChisel.historyCompartment.reconfigure(value ? history() : []),
+      effects: this.markupChisel.historyCompartment.reconfigure(value),
     });
   }
 
@@ -391,4 +391,32 @@ export class MarkupChiselBaseView extends EditorView {
     // Dotted underline for link URLs and labels, except for autolinks and GFM standalone links
     "& .tok-markup:is(.tok-link, .tok-linkReference):not(.tok-image).tok-linkURL, .tok-markup.tok-link:not(.tok-image).tok-linkLabel": { textDecorationLine: "underline", textDecorationStyle: "dotted", },
   });
+}
+
+
+/// This is a compartment that toggles the extension given to the constructor.
+/// The values passed to `of()` and returned from `get()` are booleans for
+/// the initial and current state, respectively.  The value passed to
+/// `reconfigure()` is either the state from which to toggle or a
+/// boolean to force that state.
+export class ToggleCompartment extends Compartment {
+  constructor(extension, ...superArgs) {
+    super(...superArgs);
+    this.toggleExtension = extension;
+  }
+  of(value) {
+    return super.of(this._extensionFromValue(value));
+  }
+  reconfigure(stateOrValue) {
+    const value = (stateOrValue instanceof EditorState)
+      ? !this.get(stateOrValue)
+      : stateOrValue;
+    return super.reconfigure(this._extensionFromValue(value));
+  }
+  get(state) {
+    return super.get(state).length > 0;
+  }
+  _extensionFromValue(value) {
+    return value ? [this.toggleExtension] : [];
+  }
 }
