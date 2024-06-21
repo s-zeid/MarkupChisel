@@ -14,6 +14,7 @@ export class MarkupChiselBaseView extends EditorView {
   static DEFAULT_EXTRA_CONFIG = {
     addStyles: true,
     fxComposeTrailingFix: true,
+    highlightMarkup: true,
     history: true,
   };
 
@@ -25,20 +26,35 @@ export class MarkupChiselBaseView extends EditorView {
       ...extraConfig,
     };
 
-    locals.historyCompartment = new ToggleCompartment(history());
+    if (!extraConfig.addStyles) {
+      extraConfig.highlightMarkup = false;
+    }
+
+    locals.compartments = {
+      history: [history()],
+      enhancedMarkdownExtensions: MarkupChiselBaseView.ENHANCED_MARKDOWN_EXTENSIONS,
+    };
+    for (const [key, extensions] of Object.entries(locals.compartments)) {
+      locals.compartments[key] = extensions.map(ext => new ToggleCompartment(ext));
+      locals.compartments[key].of = function(value) { return this.map(c => c.of(value)); };
+    }
 
     cmConfig = locals.cmConfig = { ...cmConfig };
     cmConfig.extensions = [
-      locals.historyCompartment.of(false),
-      MarkupChiselBaseView.EXTENSIONS,
+      locals.compartments.history.of(false),
+      MarkupChiselBaseView.BASE_EXTENSIONS,
+      MarkupChiselBaseView.HIGHLIGHT_BASE_EXTENSIONS,
+      locals.compartments.enhancedMarkdownExtensions.of(false),
       extraConfig.addStyles ? Prec.low(MarkupChiselBaseView.MARKDOWN_BASE_THEME) : [],
       cmConfig.extensions || [],
     ];
 
     super(cmConfig);
     this.markupChisel = locals;
+    this.#setupToggles();
     this.dom.dataset.markupchisel = "";
-    this._setHistoryEnabled(extraConfig.history);
+    this.toggles.history.set(extraConfig.history);
+    this.toggles.highlightMarkup.set(extraConfig.highlightMarkup);
 
     // Partial workaround for compositions in Firefox not using the proper style
     // (this only fixes the case where the line already has a token span,
@@ -51,23 +67,40 @@ export class MarkupChiselBaseView extends EditorView {
     }
   }
 
+  static ToggleCompartmentState = class ToggleCompartmentState {
+    constructor(compartments, view) {
+      this.compartments = Array.isArray(compartments) ? compartments : [compartments];
+      this.view = view;
+    }
+    get value() { return this.compartments.every(c => c.get(this.view.state)); }
+    get() { return this.value; }
+    set value(value) {
+      this.view.dispatch({ effects: this.compartments.map(c => c.reconfigure(value)) });
+    }
+    set(value) { this.value = value; }
+    async disable() { await this.set(false); }
+    async enable() { await this.set(true); }
+    async toggle(value) { await this.set(value ?? !this.value); }
+    async reset() {
+      await this.disable();
+      await this.enable();
+    }
+  }
+
+  toggles = {};
+  #setupToggles() { this._addToggles({
+    history: this.markupChisel.compartments.history,
+    highlightMarkup: this.markupChisel.compartments.enhancedMarkdownExtensions,
+  }); }
+  _addToggles(toggles) {
+    const { ToggleCompartmentState } = this.constructor;
+    for (const [name, compartments] of Object.entries(toggles)) {
+      this.toggles[name] = new ToggleCompartmentState(compartments, this);
+    }
+  }
+
   async clearHistory() {
-    await this.disableHistory();
-    await this.enableHistory();
-  }
-
-  async disableHistory() {
-    this._setHistoryEnabled(false);
-  }
-
-  async enableHistory() {
-    this._setHistoryEnabled(true);
-  }
-
-  _setHistoryEnabled(value) {
-    this.dispatch({
-      effects: this.markupChisel.historyCompartment.reconfigure(value),
-    });
+    await this.toggles.history.reset();
   }
 
   _beforeInputFxComposeTrailingFix(event) {
@@ -89,6 +122,38 @@ export class MarkupChiselBaseView extends EditorView {
       }
     }
   }
+
+  static BASE_EXTENSIONS = [
+    EditorView.lineWrapping,
+    drawSelection(),
+    keymap.of([
+      ...defaultKeymap,
+      // The Mod+U bindings for (undo|redo)Selection conflict with View Source
+      ...historyKeymap.filter(binding => [redo, undo].includes(binding.run)),
+    ]),
+
+    EditorView.contentAttributes.of(view => ({
+      style: [
+        `--markupchisel-private-tab-size: ${view.state.facet(EditorState.tabSize)}ch`,
+        `tab-size: var(--markupchisel-private-tab-size)`,
+      ].join("; "),
+    })),
+
+    Prec.lowest([
+      EditorState.tabSize.of(8),
+    ]),
+  ];
+
+  static HIGHLIGHT_BASE_EXTENSIONS = [
+    Prec.lowest([
+      syntaxHighlighting(defaultHighlightStyle),
+    ]),
+    Prec.low([
+      // Default token CSS classes
+      // See <https://lezer.codemirror.net/docs/ref/#highlight.classHighlighter>
+      syntaxHighlighting(classHighlighter),
+    ]),
+  ];
 
   static #tagMark = Tag.define();
 
@@ -142,7 +207,7 @@ export class MarkupChiselBaseView extends EditorView {
     tableHeading: Tag.define(),
   };
 
-  static LANGUAGE = new Language(
+  static ENHANCED_MARKDOWN_LANGUAGE = new Language(
     markdownLanguage.data,
     markdownLanguage.parser.configure({
       props: [
@@ -225,26 +290,7 @@ export class MarkupChiselBaseView extends EditorView {
     markdownLanguage.name,
   );
 
-  static EXTENSIONS = [
-    EditorView.lineWrapping,
-    drawSelection(),
-    keymap.of([
-      ...defaultKeymap,
-      // The Mod+U bindings for (undo|redo)Selection conflict with View Source
-      ...historyKeymap.filter(binding => [redo, undo].includes(binding.run)),
-    ]),
-
-    EditorView.contentAttributes.of(view => ({
-      style: [
-        `--markupchisel-private-tab-size: ${view.state.facet(EditorState.tabSize)}ch`,
-        `tab-size: var(--markupchisel-private-tab-size)`,
-      ].join("; "),
-    })),
-
-    Prec.lowest([
-      EditorState.tabSize.of(8),
-      syntaxHighlighting(defaultHighlightStyle),
-    ]),
+  static ENHANCED_MARKDOWN_EXTENSIONS = [
     Prec.low([
       // Default token CSS classes
       // See <https://lezer.codemirror.net/docs/ref/#highlight.classHighlighter>
@@ -255,7 +301,7 @@ export class MarkupChiselBaseView extends EditorView {
           return "tok-markup tok-markdown";
         },
         scope: (topNode) => {
-          return this.LANGUAGE.parser.nodeSet.types.includes(topNode);
+          return this.ENHANCED_MARKDOWN_LANGUAGE.parser.nodeSet.types.includes(topNode);
         },
       }),
       // Extra token CSS classes
@@ -329,14 +375,14 @@ export class MarkupChiselBaseView extends EditorView {
           return "tok-code tok-monospace tok-nested";
         },
         scope: (topNode) => {
-          return !this.LANGUAGE.parser.nodeSet.types.includes(topNode);
+          return !this.ENHANCED_MARKDOWN_LANGUAGE.parser.nodeSet.types.includes(topNode);
         },
       }),
     ]),
 
     markdown({
       codeLanguages: languageData,
-      base: this.LANGUAGE,
+      base: this.ENHANCED_MARKDOWN_LANGUAGE,
     }),
   ];
 
