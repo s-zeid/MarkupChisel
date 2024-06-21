@@ -163,85 +163,97 @@ export const interactiveExtensions = {
     ViewPlugin.fromClass(class {
       constructor(view) {
         this.view = view;
-        this.dblclickListener = (event) => {
+        this.multiClickListener = (event) => {
+          if (!(
+            event.type == "dblclick" ||
+            event.type == "auxclick" && event.button == 1
+          )) {
+            return;
+          }
           const el = event.target;
           const mod = event.altKey || event.ctrlKey || event.metaKey || event.shiftKey;
-          if (!mod && el.matches(".tok-markup:is(.tok-link, .tok-url):not(.tok-markLink, .tok-markImage, .tok-image.tok-url, .tok-image:not(.tok-linkImage))")) {
-            const isImageLink = el.matches(".tok-linkImage:not(.tok-url)");
-            let url, linkReferenceEl;
-            if (el.matches(".tok-url")) {
-              url = el.textContent.trim();
-            } else {
-              const findNextVisitor = (visit) => {
-                if (visit.nextElementSibling) {
-                  return visit.nextElementSibling;
-                }
-                let visitLine = visit.closest(".cm-line")?.nextElementSibling;
-                for (visitLine; visitLine; visitLine = visitLine.nextElementSibling) {
-                  if (visitLine?.children?.[0]) {
-                    return visitLine.children[0];
-                  }
-                }
-              };
-              let visit = findNextVisitor(el);
-              let linkReference = "";
-              if (el.matches(".tok-link.tok-linkLabel")) {
-                linkReference = el.textContent.trim();
+          if (
+            mod ||
+            !el.matches(".tok-markup:is(.tok-link, .tok-url):not(.tok-markLink, .tok-markImage, .tok-image.tok-url, .tok-image:not(.tok-linkImage))")
+          ) {
+            return;
+          }
+          const isImageLink = el.matches(".tok-linkImage:not(.tok-url)");
+          let url, linkReferenceEl;
+          if (el.matches(".tok-url")) {
+            url = el.textContent.trim();
+          } else {
+            const findNextVisitor = (visit) => {
+              if (visit.nextElementSibling) {
+                return visit.nextElementSibling;
               }
-              let inLinkReference = false;
-              let matchedLinkReference = false;
-              for (visit; visit; visit = findNextVisitor(visit)) {
-                if (visit.matches(".tok-linkReference")) {
-                  inLinkReference = true;
-                  if (visit.matches(".tok-linkLabel") && visit.textContent.trim() == linkReference) {
-                    matchedLinkReference = true;
-                  }
-                } else {
-                  inLinkReference = matchedLinkReference = false;
+              let visitLine = visit.closest(".cm-line")?.nextElementSibling;
+              for (visitLine; visitLine; visitLine = visitLine.nextElementSibling) {
+                if (visitLine?.children?.[0]) {
+                  return visitLine.children[0];
                 }
-    
-                if (!linkReference && visit.matches(".tok-link.tok-linkLabel")) {
-                  linkReference = visit.textContent.trim();
-                } else if (!linkReference || inLinkReference) {
-                  if (visit.matches(".tok-markLink, .tok-markAutolink") && "[<".includes(visit.textContent.trim())) {
-                    break;
-                  }
-                  if (visit.matches(".tok-image.tok-url")) {
-                    continue;
-                  }
-                  if (visit.matches(".tok-url") && (!inLinkReference || matchedLinkReference)) {
-                    url = visit.textContent.trim();
-                    if (inLinkReference && matchedLinkReference) {
-                      linkReferenceEl = visit;
-                    }
-                    break;
-                  }
+              }
+            };
+            let visit = findNextVisitor(el);
+            let linkReference = "";
+            if (el.matches(".tok-link.tok-linkLabel")) {
+              linkReference = el.textContent.trim();
+            }
+            let inLinkReference = false;
+            let matchedLinkReference = false;
+            for (visit; visit; visit = findNextVisitor(visit)) {
+              if (visit.matches(".tok-linkReference")) {
+                inLinkReference = true;
+                if (visit.matches(".tok-linkLabel") && visit.textContent.trim() == linkReference) {
+                  matchedLinkReference = true;
                 }
+              } else {
+                inLinkReference = matchedLinkReference = false;
+              }
     
-                if (!linkReference && !visit.nextElementSibling) {
+              if (!linkReference && visit.matches(".tok-link.tok-linkLabel")) {
+                linkReference = visit.textContent.trim();
+              } else if (!linkReference || inLinkReference) {
+                if (visit.matches(".tok-markLink, .tok-markAutolink") && "[<".includes(visit.textContent.trim())) {
+                  break;
+                }
+                if (visit.matches(".tok-image.tok-url")) {
+                  continue;
+                }
+                if (visit.matches(".tok-url") && (!inLinkReference || matchedLinkReference)) {
+                  url = visit.textContent.trim();
+                  if (inLinkReference && matchedLinkReference) {
+                    linkReferenceEl = visit;
+                  }
                   break;
                 }
               }
-            }
-            if (linkReferenceEl && el.matches(".tok-linkLabel")) {
-              const pos = view.posAtDOM(linkReferenceEl);
-              const selection = EditorSelection.single(pos, pos + linkReferenceEl.textContent.length);
-              view.dispatch({ selection, effects: [EditorView.scrollIntoView(
-                pos,
-                { y: "center", x: "center" },
-              )] });
-            } else if (url) {
-              const selection = getSelectedCharacterRange(this.view).slice(0, 3);
-              selection[1] = selection[0];
-              setSelectedCharacterRange(this.view, ...selection);
-              window.open(url, "_blank", "noopener,noreferrer");
+
+              if (!linkReference && !visit.nextElementSibling) {
+                break;
+              }
             }
           }
+          if (linkReferenceEl && el.matches(".tok-linkLabel")) {
+            const pos = view.posAtDOM(linkReferenceEl);
+            const selection = EditorSelection.single(pos, pos + linkReferenceEl.textContent.length);
+            view.dispatch({ selection, effects: [EditorView.scrollIntoView(
+              pos,
+              { y: "center", x: "center" },
+            )] });
+          } else if (url) {
+            const selection = getSelectedCharacterRange(this.view).slice(0, 3);
+            selection[1] = selection[0];
+            setSelectedCharacterRange(this.view, ...selection);
+            window.open(url, "_blank", "noopener,noreferrer");
+          }
         };
-        this.view.dom.addEventListener("dblclick", this.dblclickListener);
+        this.view.dom.addEventListener("auxclick", this.multiClickListener);
+        this.view.dom.addEventListener("dblclick", this.multiClickListener);
       }
       destroy() {
-        this.view.dom.removeEventListener("dblclick", this.dblclickListener);
+        this.view.dom.removeEventListener("auxclick", this.multiClickListener);
+        this.view.dom.removeEventListener("dblclick", this.multiClickListener);
       }
     }),
   ],
