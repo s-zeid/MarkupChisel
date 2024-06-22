@@ -1,7 +1,7 @@
 import { EditorSelection, EditorState, Transaction } from "@codemirror/state";
 import { EditorView, ViewPlugin, drawSelection } from "@codemirror/view";
 
-import { MarkupChiselBaseView } from "./base.js";
+import { MarkupChiselBaseView, ToggleCompartment } from "./base.js";
 
 
 export class MarkupChiselView extends MarkupChiselBaseView {
@@ -47,7 +47,7 @@ export function MarkupChiselTweaks(options) {
     s = s.trim().toLowerCase();
     if (s == "true" || s == "on") {
       return true;
-    } else if (s == "false" || s == "off" || s == "") {
+    } else if (s == "false" || s == "off" || s == "none" || s == "") {
       return false;
     } else {
       return null;
@@ -63,6 +63,15 @@ export function MarkupChiselTweaks(options) {
       options.autocapitalize || "none"
     ),
   };
+  const attributeToggleCompartments = Object.entries(contentAttributes).map(
+    ([name, value]) => {
+      return new ToggleCompartment(
+        EditorView.contentAttributes.of({ [name]: value }),
+        name,
+        stringBoolean(value) ?? Boolean(value),
+      );
+    },
+  );
 
   const tweaksTheme = EditorView.theme({
     // Use native caret with currentColor
@@ -89,14 +98,24 @@ export function MarkupChiselTweaks(options) {
   const useInteractiveExtensions = Object.entries(interactiveExtensions).map(([k, v]) => {
     return Boolean(options.interactive[k]) ? v : null;
   }).filter(v => v != null);
+  if (useInteractiveExtensions.length > 0) {
+    useInteractiveExtensions.unshift(
+      EditorView.editorAttributes.of({ class: "interactive" }),
+    );
+  }
+  const interactiveToggleCompartment = new ToggleCompartment(
+    useInteractiveExtensions,
+    "interactive",
+    useInteractiveExtensions.length > 0,
+  );
 
   return [
     tweaksTheme,
-    ...(options.systemHighlight ? [systemHighlightTheme] : []),
+    (options.systemHighlight ? [systemHighlightTheme] : []),
     drawSelection(),
     EditorState.allowMultipleSelections.of(true),
-    EditorView.contentAttributes.of(contentAttributes),
-    useInteractiveExtensions,
+    attributeToggleCompartments,
+    interactiveToggleCompartment,
   ];
 }
 
@@ -105,8 +124,9 @@ export const interactiveExtensions = {
   checkboxes: [
     // Toggle checkboxes on click (without modifier key)
     // Double-click changes between [x] and [X]
+    EditorView.editorAttributes.of({ class: "interactive-checkboxes" }),
     EditorView.baseTheme({
-      "& .tok-markup.tok-checkbox": { cursor: "pointer", },
+      "&.interactive-checkboxes .tok-markup.tok-checkbox": { cursor: "pointer", },
     }),
     ViewPlugin.fromClass(class {
       constructor(view) {
@@ -157,8 +177,9 @@ export const interactiveExtensions = {
   links: [
     // Open links on double-click (without modifier key)
     // Double-clicking on a link reference label highlights the URL in the reference
+    EditorView.editorAttributes.of({ class: "interactive-links" }),
     EditorView.baseTheme({
-      "& .tok-markup:is(.tok-link, .tok-url):not(.tok-markLink, .tok-markImage, .tok-image.tok-url, .tok-image:not(.tok-linkImage))": { cursor: "pointer", },
+      "&.interactive-links .tok-markup:is(.tok-link, .tok-url):not(.tok-markLink, .tok-markImage, .tok-image.tok-url, .tok-image:not(.tok-linkImage))": { cursor: "pointer", },
     }),
     ViewPlugin.fromClass(class {
       constructor(view) {

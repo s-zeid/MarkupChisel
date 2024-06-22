@@ -30,24 +30,39 @@ export class MarkupChiselBaseView extends EditorView {
       extraConfig.highlightMarkup = false;
     }
 
-    locals.compartments = {
-      history: [history()],
-      enhancedMarkdownExtensions: MarkupChiselBaseView.ENHANCED_MARKDOWN_EXTENSIONS,
+    locals.toggleCompartments = {
+      ...locals.toggleCompartments ?? {},
+      ...MarkupChiselBaseView.TOGGLE_COMPARTMENTS,
     };
-    for (const [key, extensions] of Object.entries(locals.compartments)) {
-      locals.compartments[key] = extensions.map(ext => new ToggleCompartment(ext));
-      locals.compartments[key].of = function(value) { return this.map(c => c.of(value)); };
+    for (const compartment of (cmConfig.extensions || []).flat(Infinity).filter(
+      extension => extension instanceof ToggleCompartment && extension.toggleName,
+    )) {
+      locals.toggleCompartments[compartment.toggleName] ??= compartment;
+    }
+    for (const [key, compartments] of Object.entries(locals.toggleCompartments)) {
+      if (Array.isArray(compartments)) {
+        compartments.of = function(value) { return this.map(c => c.of(value)); };
+      }
     }
 
     cmConfig = locals.cmConfig = { ...cmConfig };
     cmConfig.extensions = [
-      locals.compartments.history.of(false),
+      locals.toggleCompartments.history.of(false),
       MarkupChiselBaseView.BASE_EXTENSIONS,
       MarkupChiselBaseView.HIGHLIGHT_BASE_EXTENSIONS,
-      locals.compartments.enhancedMarkdownExtensions.of(false),
+      locals.toggleCompartments.highlightMarkup.of(false),
       extraConfig.addStyles ? Prec.low(MarkupChiselBaseView.MARKDOWN_BASE_THEME) : [],
       cmConfig.extensions || [],
     ];
+    function replaceToggleCompartments(element, index, array) {
+      if (Array.isArray(element)) {
+        return element.map(replaceToggleCompartments);
+      } else if (element instanceof ToggleCompartment) {
+        return element.of(element.toggleDefault);
+      }
+      return element;
+    }
+    cmConfig.extensions = cmConfig.extensions.map(replaceToggleCompartments);
 
     super(cmConfig);
     this.markupChisel = locals;
@@ -87,11 +102,13 @@ export class MarkupChiselBaseView extends EditorView {
     }
   }
 
+  static get TOGGLE_COMPARTMENTS() { return {
+    history: [new ToggleCompartment(history())],
+    highlightMarkup: new ToggleCompartment(MarkupChiselBaseView.ENHANCED_MARKDOWN_EXTENSIONS),
+  }; }
+
   toggles = {};
-  #setupToggles() { this._addToggles({
-    history: this.markupChisel.compartments.history,
-    highlightMarkup: this.markupChisel.compartments.enhancedMarkdownExtensions,
-  }); }
+  #setupToggles() { this._addToggles(this.markupChisel.toggleCompartments); }
   _addToggles(toggles) {
     const { ToggleCompartmentState } = this.constructor;
     for (const [name, compartments] of Object.entries(toggles)) {
@@ -446,9 +463,13 @@ export class MarkupChiselBaseView extends EditorView {
 /// `reconfigure()` is either the state from which to toggle or a
 /// boolean to force that state.
 export class ToggleCompartment extends Compartment {
-  constructor(extension, ...superArgs) {
+  toggleName = null;
+  toggleDefault = null;
+  constructor(extension, toggleName, toggleDefault, ...superArgs) {
     super(...superArgs);
     this.toggleExtension = extension;
+    this.toggleName = toggleName;
+    this.toggleDefault = toggleDefault;
   }
   of(value) {
     return super.of(this._extensionFromValue(value));
