@@ -1,18 +1,24 @@
 <!DOCTYPE html>
 <meta charset="utf-8" />
-<title>MarkupChisel test (direct instantiation)</title>
+<title>MarkupChisel test (custom element)</title>
 
 <meta name="viewport" content="width=device-width, minimum-scale=1, initial-scale=1" />
-<style>
+<style id="style-fonts">
   @import "../node_modules/inter-ui/inter.css";
   @import "../node_modules/@fontsource/roboto-mono/400.css";
   @import "../node_modules/@fontsource/roboto-mono/700.css";
-
-  html, body, .cm-editor {
+</style>
+<style>
+  html, body, markup-chisel {
     margin: 0; width: 100%; height: 100%; font-size: 16px; line-height: 1.5;
-    &:not(html, body) { height: calc(100% - 1.5rem); }
+    &:not(html, body) {
+      height: calc(100% - 1.5rem);
+      &::part(scroll) {
+        padding-block: 4px;
+        padding-inline: 6px 0;
+      }
+    }
     &:is(:focus, :focus-within) { outline: none; }
-    & .cm-scroller { line-height: inherit; }
   }
   header {
     display: flex; place-items: center; place-content: start; gap: 0.5em;
@@ -31,7 +37,7 @@
     }
   }
   @media print {
-    html, body, .cm-editor {
+    html, body, markup-chisel {
       height: auto;
     }
     button, [role="button"] {
@@ -51,17 +57,11 @@
     --markupchisel-font-feature-settings-monospace: normal;
     --markupchisel-font-size-factor-monospace: 1.0625;
   }
-  .cm-editor .tok-markup.tok-comment {
-    font-feature-settings: var(--font-feature-settings), "calt" 0;
-  }
-  .cm-editor .tok-markup.tok-monospace:is(.tok-heading1, .tok-heading2) {
-    letter-spacing: -0.025em;
-  }
 </style>
 
 
 <header>
-  <h1><a href="" target="_blank">Direct instantiation</a></h1>
+  <h1><a href="" target="_blank">Custom element</a></h1>
   <button onclick="location.reload();">Reload</button>
   <button onclick="window.print();">Print</button>
 </header>
@@ -70,7 +70,7 @@
 <script type="module">
   for (const key of ["debug", "error", "info", "log", "warn"]) {
     const original = console[key];
-    console[key] = function(...args) { return original.call(this, "(direct)", ...args); }
+    console[key] = function(...args) { return original.call(this, "(element)", ...args); }
   }
 </script>
 <script src="../dist/markupchisel.lite.bundle.iife.js"></script>
@@ -91,23 +91,36 @@
     }
   
   
-    window.markupChisel = new MarkupChiselView({
-      doc: `You should not be able to undo to this state.`,
-      parent: document.body,
-      extensions: [
-        Prec.highest(keymap.of([
-          { key: "Mod-Enter", run: view => (window.getTextToHash(), true), },
-        ])),
-        Prec.high(keymap.of([
-          { key: "Mod-i", run: insertTab, },
-          { key: "Alt-i", run: selectParentSyntax, },
-          { key: "Mod-\\", run: selectParentSyntax, },
-        ])),
-      ],
-    }, {
-      interactive: true,
-      spellcheck: true,
-    });
+    window.markupChisEl = document.createElement("markup-chisel");
+    window.markupChisEl.textContent = "You should not be able to undo to this state. (1)";
+    window.markupChisEl.addStyleSheet([
+      document.querySelector("#style-fonts"),
+      /* css */ `
+        .cm-editor .tok-markup.tok-comment {
+          font-feature-settings: var(--font-feature-settings), "calt" 0;
+        }
+        .cm-editor .tok-markup.tok-monospace:is(.tok-heading1, .tok-heading2) {
+          letter-spacing: -0.025em;
+        }
+      `,
+    ]);
+    document.body.append(window.markupChisEl);
+    window.markupChisel = window.markupChisEl.markupChisel;
+    window.markupChisEl.value = "You should not be able to undo to this state. (2)";
+    window.markupChisEl.addExtension([
+      Prec.highest(keymap.of([
+        { key: "Mod-Enter", run: view => (window.getTextToHash(), true), },
+      ])),
+      Prec.high(keymap.of([
+        { key: "Mod-i", run: insertTab, },
+        { key: "Alt-i", run: selectParentSyntax, },
+        { key: "Mod-\\", run: selectParentSyntax, },
+      ])),
+    ]);
+    window.markupChisEl.noAutocapitalize = true;
+    window.markupChisEl.noAutocorrect = true;
+    window.markupChisEl.noSpellcheck = true;
+    window.markupChisEl.interactive = true;
     window.markupChisel.clearHistory();
     window.markupChisel.contentDOM.focus();
   

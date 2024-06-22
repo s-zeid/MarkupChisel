@@ -50,6 +50,19 @@ $ npm run build  # or make
 
 ## Usage
 
+As a custom element:
+
+```html
+<markup-chisel>**Hello** _world_!</markup-chisel>
+```
+
+The following boolean attributes are available:
+
+* `no-autocapitalize`: Disables auto-capitalization
+* `no-autocorrect`: Disables autocorrect
+* `no-spellcheck`: Disables spell check
+* `interactive`: Enables interactive features
+
 As an ECMAScript module:
 
 ```javascript
@@ -85,6 +98,12 @@ available via `MarkupChisel.imports`.  See [src/bundle.js](./src/bundle.js)
 for details.
 
 To enable the interactive features, set up MarkupChisel as follows:
+
+```html
+<markup-chisel interactive>**Hello** _world_!</markup-chisel>
+```
+
+or
 
 ```javascript
 window.markupChisel = new MarkupChisel.MarkupChiselView({

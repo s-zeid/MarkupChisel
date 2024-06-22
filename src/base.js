@@ -143,11 +143,11 @@ export class MarkupChiselBaseView extends EditorView {
   static BASE_EXTENSIONS = [
     EditorView.lineWrapping,
     drawSelection(),
-    keymap.of([
+    Prec.lowest(keymap.of([
       ...defaultKeymap,
       // The Mod+U bindings for (undo|redo)Selection conflict with View Source
       ...historyKeymap.filter(binding => [redo, undo].includes(binding.run)),
-    ]),
+    ])),
 
     EditorView.contentAttributes.of(view => ({
       style: [
