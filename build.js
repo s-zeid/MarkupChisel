@@ -90,27 +90,29 @@ async function build() {
   for (const variant of Object.keys(variants)) {
     const variantOptions = variants[variant];
 
-    await esbuild.build({
-      outfile: `dist/import/${FILENAME}.${variant}.esm.js`,
-      ...defaults,
-      ...variantOptions,
-      format: "esm",
-    });
-
-    await esbuild.build({
-      outfile: `dist/${FILENAME}.${variant}.bundle.esm.js`,
-      ...bundle,
-      ...variantOptions,
-      format: "esm",
-    });
-
-    await esbuild.build({
-      outfile: `dist/${FILENAME}.${variant}.bundle.iife.js`,
-      ...bundle,
-      ...variantOptions,
-      format: "iife",
-      globalName: GLOBALNAME,
-    });
+    try {
+      await esbuild.build({
+        outfile: `dist/import/${FILENAME}.${variant}.esm.js`,
+        ...defaults,
+        ...variantOptions,
+        format: "esm",
+      });
+  
+      await esbuild.build({
+        outfile: `dist/${FILENAME}.${variant}.bundle.esm.js`,
+        ...bundle,
+        ...variantOptions,
+        format: "esm",
+      });
+  
+      await esbuild.build({
+        outfile: `dist/${FILENAME}.${variant}.bundle.iife.js`,
+        ...bundle,
+        ...variantOptions,
+        format: "iife",
+        globalName: GLOBALNAME,
+      });
+    } catch (error) { process.exit(1); }
   }
 }
 
