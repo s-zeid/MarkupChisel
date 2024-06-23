@@ -444,7 +444,7 @@ export class MarkupChiselBaseView extends EditorView {
     "& :where(.tok-markup).tok-mark": { "--markupchisel-private-color-mark": "color-mix(in hsl, currentColor, rgba(128 128 128 / calc(1 - 0.625)) 50%)", color: "var(--markupchisel-private-color-mark)", },
     "& .tok-markup.tok-markCode": { fontWeight: "bold", textShadow: "currentColor 0 0 1px", },
     "& .tok-markup:is(.tok-markCodeBlock, .tok-markCodeInline):only-child": { textShadow: "var(--markupchisel-private-color-mark) 0 0.25em 0, var(--markupchisel-private-color-mark) 0 0.25em 1px", caretColor: "var(--markupchisel-private-color-mark)", color: "transparent", },
-    "& :where(.tok-markup).tok-markQuote:first-child": { color: "color-mix(in hsl, currentColor, rgba(128 128 128 / calc(1 - 0.625)) calc(50% / 0.75))", },
+    "& :where(.tok-markup).tok-markQuoteBlock": { color: "color-mix(in hsl, currentColor, rgba(128 128 128 / calc(1 - 0.625)) calc(50% / 0.75))", },
     "& .tok-superscript": { verticalAlign: "super", fontSize: "smaller", },
     "& .tok-subscript": { verticalAlign: "sub", fontSize: "smaller", },
     "& .tok-url:not(.tok-linkURL)": { textDecorationLine: "underline", },
