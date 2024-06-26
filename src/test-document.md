@@ -63,6 +63,11 @@ and
 % this should not be highlighted with the lite bundle
 ```
 
+```diff
+--- deleted
++++ inserted
+```
+
 <div>HTML block</div>
 
 ## GFM blocks

@@ -437,6 +437,11 @@ export function MarkupChiselColors(options) {
     }),
   };
 
+  function opacityGradient(color, opacity) {
+    opacity = Number(opacity);
+    return `linear-gradient(0, ${color} calc(-${2**31}% * (1 - ${opacity})), transparent calc(${2**31-1}% * ${opacity}));`;
+  }
+
   const variableHighlightTheme = EditorView.theme({
     "&": { background: "var(--background)", color: "var(--foreground)", },
     "& .tok-link": { color: "var(--violet)", },
@@ -445,8 +450,8 @@ export function MarkupChiselColors(options) {
     "& .tok-bool": { color: "var(--constant)", },
     "& .tok-url": { color: "var(--url)", },
     "& .tok-labelName": { color: "var(--preproc)", },
-    "& .tok-inserted": { color: "var(--black)", background: "var(--green)", },
-    "& .tok-deleted": { color: "var(--black)", background: "var(--red)", },
+    "& .tok-inserted": { color: "var(--black)", background: opacityGradient("var(--green)", 0.375), },
+    "& .tok-deleted": { color: "var(--black)", background: opacityGradient("var(--red)", 0.375), },
     "& .tok-literal": { color: "var(--constant)", },
     "& .tok-string": { color: "var(--constant)", },
     "& .tok-number": { color: "var(--constant)", },
