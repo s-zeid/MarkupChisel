@@ -105,7 +105,6 @@
       `,
     ]);
     document.body.append(window.markupChisEl);
-    window.markupChisel = window.markupChisEl.markupChisel;
     window.markupChisEl.value = "You should not be able to undo to this state. (2)";
     window.markupChisEl.addExtension([
       Prec.highest(keymap.of([
@@ -121,22 +120,21 @@
     window.markupChisEl.noAutocorrect = true;
     window.markupChisEl.noSpellcheck = true;
     window.markupChisEl.interactive = true;
-    window.markupChisel.clearHistory();
-    window.markupChisel.contentDOM.focus();
+    window.markupChisEl.clearHistory();
+    window.markupChisEl.focus();
   
     document.documentElement.addEventListener("click", (event) => {
       if (event.target.matches(`html, body, header`)) {
-        window.markupChisel.contentDOM.focus();
+        window.markupChisEl.focus();
       }
     });
   
   
     window.getText = function getText() {
-      return markupChisel.state.doc.toString();
+      return window.markupChisEl.value;
     };
     window.setText = function setText(text) {
-      markupChisel.dispatch({ changes: { from: 0, to: markupChisel.state.doc.length, insert: text } });
-      markupChisel.clearHistory();
+      window.markupChisEl.value = text;
     };
   
   
@@ -157,8 +155,15 @@
       }
       return `#${params.toString()}`;
     }
+
+    let clearOnHashChange = true;
     window.getTextToHash = function(hash = location.hash) {
-      location.hash = window.updateHashText(hash);
+      try {
+        clearOnHashChange = false;
+        location.hash = window.updateHashText(hash);
+      } finally {
+        setTimeout(() => { clearOnHashChange = true; }, 0);
+      }
     }
     window.setTextFromHash = function(hash = location.hash) {
       const params = window.getHashParams(hash);
@@ -168,6 +173,9 @@
         window.setText(window.TEST_DOC);
       } else {
         window.setText(params.get("text") || "");
+      }
+      if (clearOnHashChange) {
+        window.markupChisEl.clearHistory();
       }
     };
   

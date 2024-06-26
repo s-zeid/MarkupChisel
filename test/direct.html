@@ -123,7 +123,6 @@
     };
     window.setText = function setText(text) {
       markupChisel.dispatch({ changes: { from: 0, to: markupChisel.state.doc.length, insert: text } });
-      markupChisel.clearHistory();
     };
   
   
@@ -144,8 +143,15 @@
       }
       return `#${params.toString()}`;
     }
+
+    let clearOnHashChange = true;
     window.getTextToHash = function(hash = location.hash) {
-      location.hash = window.updateHashText(hash);
+      try {
+        clearOnHashChange = false;
+        location.hash = window.updateHashText(hash);
+      } finally {
+        setTimeout(() => { clearOnHashChange = true; }, 0);
+      }
     }
     window.setTextFromHash = function(hash = location.hash) {
       const params = window.getHashParams(hash);
@@ -155,6 +161,9 @@
         window.setText(window.TEST_DOC);
       } else {
         window.setText(params.get("text") || "");
+      }
+      if (clearOnHashChange) {
+        window.markupChisel.clearHistory();
       }
     };
   
