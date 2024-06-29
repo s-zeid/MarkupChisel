@@ -4,6 +4,7 @@ import * as codemirror_langMarkdown from "@codemirror/lang-markdown";
 import * as codemirror_state from "@codemirror/state";
 import * as codemirror_view from "@codemirror/view";
 
+import * as lezer_common from "@lezer/common";
 import * as lezer_highlight from "@lezer/highlight";
 
 import { languageData } from "./base.js";
@@ -18,6 +19,7 @@ export const imports = {
     view: codemirror_view,
   },
   lezer: {
+    common: lezer_common,
     highlight: lezer_highlight,
   },
 };
