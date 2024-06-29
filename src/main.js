@@ -475,7 +475,8 @@ export function MarkupChiselColors(options) {
     "& .tok-escape": { color: "var(--constant)", fontWeight: "bold", textDecorationLine: "underline", },
     "& .tok-contentSeparator": { color: "var(--comment)", opacity: "1", },
     "& .tok-markup.tok-mark": { "--markupchisel-private-color-mark": "var(--comment)", color: "var(--markupchisel-private-color-mark)", fontStyle: "normal", },
-    "& .tok-markup.tok-markQuoteBlock": { color: "var(--markupchisel-private-color-mark)", opacity: 0.75, },
+    "& .tok-markup:is(.tok-markQuoteBlock, .tok-lighter, :has(.tok-lighter))": { color: "var(--markupchisel-private-color-mark)", opacity: 0.75, },
+    "& .tok-markup:is(.tok-markEmphasis, .tok-markStrong):is(.tok-lighter, :has(.tok-lighter))": { color: "var(--markupchisel-private-color-mark)", opacity: 0.625, },
   });
 
   return [

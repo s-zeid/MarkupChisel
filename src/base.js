@@ -1,9 +1,9 @@
 import * as commands from "@codemirror/commands";
 import { defaultKeymap, history, historyKeymap, redo, undo } from "@codemirror/commands";
-import { Language, defaultHighlightStyle, syntaxHighlighting } from "@codemirror/language";
+import { Language, defaultHighlightStyle, syntaxHighlighting, syntaxTree } from "@codemirror/language";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
-import { Compartment, EditorState, Prec } from "@codemirror/state";
-import { EditorView, drawSelection, keymap } from "@codemirror/view";
+import { Compartment, EditorState, RangeSet, Prec } from "@codemirror/state";
+import { Decoration, EditorView, ViewPlugin, drawSelection, keymap } from "@codemirror/view";
 import { Tag, classHighlighter, styleTags, tagHighlighter, tags } from "@lezer/highlight";
 
 
@@ -395,6 +395,12 @@ export class MarkupChiselBaseView extends EditorView {
           return !this.ENHANCED_MARKDOWN_LANGUAGE.parser.nodeSet.types.includes(topNode);
         },
       }),
+      // Lighter underscores
+      HighlightNodeTextPlugin(
+        (node) => node.type == this.ENHANCED_MARKDOWN_LANGUAGE.parser.nodeSet.types.filter(t => t.name == "EmphasisMark")[0],
+        (node, text) => text.match(/^_+$/),
+        { class: "tok-lighter" },
+      ),
     ]),
 
     markdown({
@@ -444,7 +450,8 @@ export class MarkupChiselBaseView extends EditorView {
     "& :where(.tok-markup).tok-mark": { "--markupchisel-private-color-mark": "color-mix(in hsl, currentColor, rgba(128 128 128 / calc(1 - 0.625)) 50%)", color: "var(--markupchisel-private-color-mark)", },
     "& .tok-markup.tok-markCode": { fontWeight: "bold", textShadow: "currentColor 0 0 1px", },
     "& .tok-markup:is(.tok-markCodeBlock, .tok-markCodeInline):only-child": { textShadow: "var(--markupchisel-private-color-mark) 0 0.25em 0, var(--markupchisel-private-color-mark) 0 0.25em 1px", caretColor: "var(--markupchisel-private-color-mark)", color: "transparent", },
-    "& :where(.tok-markup).tok-markQuoteBlock": { color: "color-mix(in hsl, currentColor, rgba(128 128 128 / calc(1 - 0.625)) calc(50% / 0.75))", },
+    "& .tok-markup:where(.tok-markQuoteBlock, .tok-lighter, :has(.tok-lighter))": { color: "color-mix(in hsl, currentColor, rgba(128 128 128 / calc(1 - 0.625)) calc(50% / 0.75))", },
+    "& .tok-markup:where(.tok-markEmphasis, .tok-markStrong):where(.tok-lighter, :has(.tok-lighter))": { color: "color-mix(in hsl, currentColor, rgba(128 128 128 / calc(1 - 0.625)) calc(50% / 0.625))", },
     "& .tok-superscript": { verticalAlign: "super", fontSize: "smaller", },
     "& .tok-subscript": { verticalAlign: "sub", fontSize: "smaller", },
     "& .tok-url:not(.tok-linkURL)": { textDecorationLine: "underline", },
@@ -486,4 +493,54 @@ export class ToggleCompartment extends Compartment {
   _extensionFromValue(value) {
     return value ? [this.toggleExtension] : [];
   }
+}
+
+
+function HighlightNodeTextPlugin(nodeTypeMatches, nodeTextMatches, spec) {
+  return Prec.highest(ViewPlugin.fromClass(class {
+    decorations = null;
+
+    constructor(view) {
+      this.view = view;
+      this.decoration = Decoration.mark({
+        ...spec,
+        inclusiveStart: true,
+        inclusiveEnd: false,
+      });
+      this.nodeTypeMatches = nodeTypeMatches;  // SyntaxNodeRef, EditorState
+      this.nodeTextMatches = nodeTextMatches;  // SyntaxNodeRef, String, EditorState
+
+      this.updateDeco(null);
+    }
+
+    update(update) {
+      if (update.docChanged || update.viewportChanged) {
+        this.updateDeco(update);
+      }
+    }
+
+    updateDeco(update) {
+      const view = (update || this).view;
+      const state = (update || view).state;
+      const tree = syntaxTree(state);
+      const decorationRanges = [];
+      for (const { from, to } of view.visibleRanges) {
+        tree.iterate({
+          enter: (node) => {
+            if (
+              this.nodeTypeMatches(node, state) &&
+              this.nodeTextMatches(node, state.sliceDoc(node.from, node.to), state)
+            ) {
+              decorationRanges.push(this.decoration.range(node.from, node.to));
+            }
+          },
+          from,
+          to,
+        });
+      }
+      this.decorations = RangeSet.of(decorationRanges, true);
+    }
+  }, {
+    decorations: v => v.decorations,
+  }));
 }
