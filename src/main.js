@@ -1,4 +1,4 @@
-import { EditorSelection, EditorState, Transaction } from "@codemirror/state";
+import { EditorSelection, EditorState, Prec, Transaction } from "@codemirror/state";
 import { EditorView, ViewPlugin, drawSelection } from "@codemirror/view";
 
 import { MarkupChiselBaseView, ToggleCompartment } from "./base.js";
@@ -287,7 +287,7 @@ export function MarkupChiselColors(options) {
     ...options,
   };
 
-  const colorVariablesTheme = EditorView.theme({
+  const colorVariablesTheme = Prec.lowest(EditorView.theme({
     "&": {
       /* XTerm */
       "--xterm-darkorange3": "#AF5F00",
@@ -319,8 +319,9 @@ export function MarkupChiselColors(options) {
       "--highlight": "var(--xterm-grey85)",
     },
     "@media (prefers-color-scheme: dark)": {
-      "&": {
+      "": {
         /* Extra color names */
+        "--brown": "var(--xterm-darkorange)",
         "--violet": "var(--xterm-mediumpurple1)",
         "--gray": "var(--xterm-grey66)",
 
@@ -333,7 +334,7 @@ export function MarkupChiselColors(options) {
         "--highlight": "var(--xterm-grey27)",
       },
     },
-  });
+  }));
 
   const palettes = {
     "basic": EditorView.theme({
@@ -380,6 +381,7 @@ export function MarkupChiselColors(options) {
     "adwaita": EditorView.theme({
       "&": {
         /* \`-light\`: darks adjusted for contrast */
+        /* \`-dark\`: lights adjusted for contrast */
         "--adwaita-black": "#241F31",
         "--adwaita-darkred": "#C01C28",
         "--adwaita-darkgreen": "#2EC27E",
@@ -394,6 +396,7 @@ export function MarkupChiselColors(options) {
         "--adwaita-lightgray": "#C0BFBC",
         "--adwaita-darkgray": "#5E5C64",
         "--adwaita-red": "#ED333B",
+        "--adwaita-red-dark": "#FF3840",
         "--adwaita-green": "#57E389",
         "--adwaita-yellow": "#F8E45C",
         "--adwaita-blue": "#51A1FF",
@@ -423,13 +426,16 @@ export function MarkupChiselColors(options) {
         "--white": "var(--adwaita-white)",
         "--background": "var(--adwaita-background-light)",
         "--foreground": "var(--adwaita-foreground-light)",
+
+        "--statement": "var(--darkyellow)",
       },
       "@media (prefers-color-scheme: dark)": {
-        "&": {
+        "": {
           "--darkgreen": "var(--adwaita-darkgreen)",
           "--darkyellow": "var(--adwaita-darkyellow)",
           "--darkblue": "var(--adwaita-darkblue)",
           "--darkcyan": "var(--adwaita-darkcyan)",
+          "--red": "var(--adwaita-red-dark)",
           "--background": "var(--adwaita-background)",
           "--foreground": "var(--adwaita-foreground)",
         },
@@ -450,8 +456,8 @@ export function MarkupChiselColors(options) {
     "& .tok-bool": { color: "var(--constant)", },
     "& .tok-url": { color: "var(--url)", },
     "& .tok-labelName": { color: "var(--preproc)", },
-    "& .tok-inserted": { color: "var(--black)", background: opacityGradient("var(--green)", 0.375), },
-    "& .tok-deleted": { color: "var(--black)", background: opacityGradient("var(--red)", 0.375), },
+    "& .tok-inserted": { color: "var(--foreground)", background: opacityGradient("var(--green)", 0.375), },
+    "& .tok-deleted": { color: "var(--foreground)", background: opacityGradient("var(--red)", 0.375), },
     "& .tok-literal": { color: "var(--constant)", },
     "& .tok-string": { color: "var(--constant)", },
     "& .tok-number": { color: "var(--constant)", },

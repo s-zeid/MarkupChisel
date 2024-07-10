@@ -16,7 +16,7 @@ const element = class MarkupChiselElement extends HTMLElement {
     :host(:where(:not([hidden]))) {
       display: block; position: relative; height: var(--base-height);
       overflow: auto; resize: auto;
-      background: Field; color: FieldText; font: medium system-ui;
+      font: medium system-ui;
       --base-height: calc(var(--computed-line-height, 1.2) * var(--rows, -1));
     }
     :host(:where([flex])) {
@@ -35,7 +35,7 @@ const element = class MarkupChiselElement extends HTMLElement {
     main, [part~="input"] {
       display: block; width: 100%; height: 100%; min-height: var(--base-height);
       margin: 0; padding: 0; border: none; resize: none;
-      background: transparent; color: inherit; font: inherit; line-height: inherit;
+      font: inherit; line-height: inherit;
     }
     :where([part~="scroll"]) {
       padding-block-end: 0.0625em;

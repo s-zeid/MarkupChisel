@@ -18,7 +18,7 @@
     display: flex; place-items: center; place-content: start; gap: 0.5em;
     position: relative; height: 1.5rem; overflow: hidden;
     font-family: var(--font-family); font-feature-settings: var(--font-feature-settings);
-    &::before, &::after { content: ""; position: absolute; inset: 0; z-index: -1; }
+    &::before, &::after { content: ""; position: absolute; inset: 0; pointer-events: none; }
     &::before { background: CanvasText; opacity: calc(1 / 32); }
     &::after { opacity: calc(4 / 32); border-block-end: 0.0625rem solid CanvasText; }
     & h1 {
@@ -29,6 +29,7 @@
       color: LinkText; text-decoration: none;
       &:is(:hover, :focus, :active) { text-decoration: underline; }
     }
+    color-scheme: light dark; background: Canvas;
   }
   @media print {
     html, body, .cm-editor {
